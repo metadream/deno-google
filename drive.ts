@@ -1,7 +1,8 @@
+// deno-lint-ignore-file no-explicit-any
 const TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token";
 const DRIVE_URL = "https://www.googleapis.com/drive/v3/files";
-const FILE_ATTRS = "id, name, mimeType, size, modifiedTime, description, iconLink, thumbnailLink, imageMediaMetadata";
 const FOLDER_TYPE = "application/vnd.google-apps.folder";
+const FILE_ATTRS = "id, name, mimeType, size, modifiedTime, description, iconLink, thumbnailLink, imageMediaMetadata";
 
 export type DriveOptions = {
     client_id: string;
@@ -31,9 +32,7 @@ export class GoogleDrive {
     constructor(options: DriveOptions) {
         options.root_id = options.root_id || "root";
         this.options = options;
-        this.pathCache = {
-            "/": { id: options.root_id, mimeType: FOLDER_TYPE },
-        };
+        this.pathCache = { "/": { id: options.root_id, mimeType: FOLDER_TYPE } };
     }
 
     /**
@@ -62,15 +61,11 @@ export class GoogleDrive {
 
         const result = await response.json();
         if (result.error) {
-            throw {
-                status: response.status,
-                message: result.error_description,
-            };
+            throw { status: response.status, message: result.error_description };
         }
 
         // The access_token expires 5 minutes earlier than the official api
-        this.options.expires_on = Date.now() +
-            (result.expires_in - 300) * 1000;
+        this.options.expires_on = Date.now() + (result.expires_in - 300) * 1000;
         this.options.access_token = result.access_token;
 
         if (this.options.logger) {
@@ -110,7 +105,7 @@ export class GoogleDrive {
     }
 
     /**
-     * Get file/directory metadata
+     * Get file or directory metadata by the path
      * @param path
      * @returns
      */
@@ -136,11 +131,7 @@ export class GoogleDrive {
 
                     this.pathCache[fullPath] = result.files[0];
                     if (this.options.logger) {
-                        console.log(
-                            `Metadata of "${fullPath}" requested:`,
-                            Date.now() - time,
-                            "ms",
-                        );
+                        console.log(`Metadata of "${fullPath}" requested:`, Date.now() - time, "ms");
                     }
                 }
                 metadata = this.pathCache[fullPath];
@@ -172,11 +163,7 @@ export class GoogleDrive {
             throw { status: response.status, message: result.error.message };
         }
         if (this.options.logger) {
-            console.log(
-                `Rawdata of "${id}" requested:`,
-                Date.now() - time,
-                "ms",
-            );
+            console.log(`Rawdata of "${id}" requested:`, Date.now() - time, "ms");
         }
         return response.body;
     }
@@ -203,11 +190,7 @@ export class GoogleDrive {
             const time = Date.now();
             const result: any = await this.request(params);
             if (this.options.logger) {
-                console.log(
-                    `Filelist of "${id}" requested:`,
-                    Date.now() - time,
-                    "ms",
-                );
+                console.log(`Filelist of "${id}" requested:`, Date.now() - time, "ms");
             }
 
             pageToken = result.nextPageToken;
@@ -228,14 +211,11 @@ export class GoogleDrive {
     ): Promise<unknown> {
         await this.authorize();
 
-        const response = await fetch(
-            DRIVE_URL + "?" + this.stringify(params),
-            {
-                headers: {
-                    Authorization: "Bearer " + this.options.access_token,
-                },
-            },
-        );
+        const response = await fetch(DRIVE_URL + "?" + this.stringify(params), {
+            headers: {
+                Authorization: "Bearer " + this.options.access_token,
+            }
+        });
 
         const result = await response.json();
         if (result.error) {
@@ -256,9 +236,7 @@ export class GoogleDrive {
     private stringify(p: Record<string, string | number | boolean>) {
         const qs: string[] = [];
         for (const k in p) {
-            if (p[k]) {
-                qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(p[k]));
-            }
+            if (p[k]) qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(p[k]));
         }
         return qs.join("&");
     }
@@ -281,10 +259,7 @@ export class GoogleDrive {
      */
     private trim(string: string, char?: string) {
         return char
-            ? string.replace(
-                new RegExp("^\\" + char + "+|\\" + char + "+$", "g"),
-                "",
-            )
+            ? string.replace(new RegExp("^\\" + char + "+|\\" + char + "+$", "g"), "")
             : string.replace(/^\s+|\s+$/g, "");
     }
 }
